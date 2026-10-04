@@ -2,9 +2,11 @@
   <img src="Extras/Repo/nodra_logo.png" alt="Nodra" width="240">
 </p>
 
-# Nodra
+# Nodra for Unity
 
 **[Watch the demo on YouTube](https://www.youtube.com/watch?v=BM-pM-0AHjk)**
+
+**For standalone version check this repo: [Nodra.Releases](https://github.com/OlegDzhuraev/Nodra.Releases)** 
 
 A simplified, code-first node network for generating meshes in Unity, in the Editor or at runtime - edited as a
 visual node graph.
@@ -81,14 +83,12 @@ Editor** in its inspector. Right-click the graph canvas to add nodes.
 
 The final mesh is rebuilt from `Geometry Output` node (marked green).
 
-A **Preview** panel floats over the bottom-right of the canvas with a live, orbitable view of the graph's current
-result (drag to rotate, scroll to zoom). On a `ProceduralMeshGenerator`, it updates as you edit only while **Auto
+On a `ProceduralMeshGenerator`, the **Preview** panel updates as you edit only while **Auto
 Generate** is on - with it off, the preview freezes at whatever it last showed until you click **Generate**, so it
 never runs ahead of the actual baked mesh. A standalone `Geo Graph` asset (see [Sub-graphs](#sub-graphs)) has no
 Auto Generate/Generate of its own, so its preview always stays live.
 
-Turn on **Auto Generate** (in the graph window's toolbar, or the component's inspector) to have the mesh rebuild
-automatically on every graph edit.
+Turn on **Auto Generate** to have the mesh rebuild automatically on every graph edit.
 
 Turn on **Show Normals** (in the inspector) to draw a Scene view line per vertex along the baked `Mesh`'s own
 normal (shows the `Mesh.normals` the renderer uses) - useful for checking a generator's winding or
@@ -117,40 +117,11 @@ it doesn't automatically regenerate whatever elsewhere references it via `SubGra
 
 ### NodraCore native library
 
-`WeldNode`, `SmoothByAngleNode`, `NoiseDisplaceNode`, `ArrayNode`, `AutoUVNode`, `BendNode`, `CapHolesNode`,
-`ChamferNode`, `CircleGeneratorNode`, `CopyToPointsNode`, `ExtrudeNode`, `FaceFilterNode`, `IcoSphereGeneratorNode`,
-`MirrorNode`, `RelaxNode`, `ScatterNode`, `SubdivideNode`, `SplineGeneratorNode`, `TubeNode`, `BooleanNode`,
-`UVTransformNode`, `TaperNode`, `MergeNode`, `FlipNormalsNode`, `LineGeneratorNode`, `TwistNode`, `TransformNode`,
-`RandomTransformNode`, `SliceNode`, `SetAttributeNode`, `RemoveUnusedPointsNode`, `BoxGeneratorNode`,
-`SphereGeneratorNode`, `GridGeneratorNode`, `TorusGeneratorNode` and `CylinderGeneratorNode` run entirely inside
-`NodraCore` - a small native library bundled at `Sources/Plugins/` (built from source in `Native/NodraCore` at
-the repo root, compiled ahead-of-time, not a normal managed .NET assembly). It ships for desktop Editor **and**
+Most of nodes run entirely inside`NodraCore` - a small native library bundled at `Sources/Plugins/`  It ships for desktop Editor **and**
 Standalone (Windows/macOS/Linux) - it's meant to run in a built Player, not just power the graph editor. Without
-it available for the current platform (not yet built for it, or the Plugin Inspector isn't set up for it), these
-nodes stay in the graph but do nothing useful instead - every modifier in that list passes its input through
-unchanged, the generators produce no geometry at all (there's no existing input for a generator to fall back to)
-- the node itself shows a warning box explaining why, same as `DecimateNode` below when its own dependency is
-missing. `DeletePointsNode`'s **Random** mode, `VertexColorNode`'s **Gradient** mode, `BooleanNode` with only one
-input connected, `MergeNode` with **Branch** unconnected, and `SetAttributeNode` with anything but **Constant**
-mode are the exceptions that only PARTLY (or don't at all, for `BooleanNode`/`MergeNode`) depend on it -
-`DeletePointsNode`'s **Attribute** mode, `VertexColorNode`'s **Flat** mode, `BooleanNode` with one side
-unconnected, `MergeNode` with no Branch, and `SetAttributeNode`'s **Constant** mode never needed NodraCore and
-keep working regardless.
-
-`NoiseDisplaceNode`'s **Perlin** option in particular is worth knowing about separately: it no longer tries to
-match `Mathf.PerlinNoise`'s own output once NodraCore is available - that function runs inside Unity's own
-closed-source engine and has no publicly reproducible equivalent outside it - so it switches to a different,
-from-scratch gradient noise instead. A graph built with **Perlin** noise will look visibly different (same rolling
-character, different specific bumps) the first time it's opened somewhere NodraCore is present, compared to
-before. **Voronoi** is unaffected either way - it was always Nodra's own algorithm.
-
-`CopyToPointsNode`'s **Align To Normal** has a similarly narrow exception: Unity's own `Quaternion.FromToRotation`
-is also a closed-source native engine call with no reproducible algorithm. Every point normal except one direction
-still gets the single mathematically correct alignment; only a point whose normal lands EXACTLY straight down (the
-underside of a perfectly flat surface, which comes up often enough in practice) has no unique answer, and NodraCore
-picks a fixed, documented orientation there instead of guessing at Unity's own. Existing graphs stamping copies on
-an exactly-downward-facing surface may see those specific copies rotated differently once NodraCore is available -
-every other direction is unaffected.
+it available for the current platform, these
+nodes stay in the graph but do nothing - every modifier in that list passes its input through
+unchanged, the generators produce no geometry at all - the node itself shows a warning box explaining why. 
 
 ### Optional: DecimateNode
 
